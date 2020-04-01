@@ -11,6 +11,13 @@ function testdbconnection() {
 	return $db->testconnection();
 }
 
+function processPageParams() {
+	$page = isset($_REQUEST['page']) ? $_REQUEST['page'] : 1;
+	$perpage= isset($_REQUEST['perpage']) ? $_REQUEST['perpage'] : 20;
+	return array($page, $perpage);
+}
+
+
 function processFormdata() {
 	$message = array('text' => '', 'type' => 'bg-success');
 
@@ -29,10 +36,35 @@ function processFormdata() {
 				$message['type'] = 'bg-danger';
 			}
 			break;
+		case 'changeAccount' :
+			if (!empty($_POST['newaccountid'])) {
+				if (updateTransactionAccount()) {
+					$message['text'] = 'Account has been successfully changed.';
+				} else{
+					$message['text'] = 'Account has not been updated.';
+					$message['type'] = 'bg-danger';
+				}
+			}else{
+				$message['text'] = 'No account has been selected.';
+				$message['type'] = 'bg-danger';
+			}
+			break;
+		case 'viewAccount' :
+		case 'changePagination' :
+		case 'clearAccountFilter' :
+			break;		// dealth with elsewhere.
+		default :
+			die('<pre>' . print_r($_REQUEST, true) . '</pre>');
 	}
 
 	return $message;
 
+}
+
+function updateTransactionAccount() {
+	global $db;
+
+	return $db->updateTransactionAccount($_POST['recid'], $_POST['newaccountid']);
 }
 
 function _processStatement() {
@@ -137,4 +169,49 @@ function getTransactionAcct($string) {
 
 	return $newstring;
 
+}
+
+function getTransactions() {
+	global $db;
+
+	list($page, $perpage) = processPageParams();
+
+	// check no filter for accountid //
+	if (isset($_POST['action']) && ($_POST['action'] != 'clearAccountFilter')) {
+		$accountid = isset($_POST['accountid']) ? $_POST['accountid'] : null;
+	}else{
+		$accountid = null;
+	}
+
+	return $db->getTransactions($page, $perpage, $accountid);
+}
+
+function getAccounts() {
+	global $db;
+	return $db->getAccounts();
+}
+
+function makeHTMLOptions($excludeid = null) {
+	$html = '';
+	$accounts = getAccounts();
+	foreach ($accounts as $accid => $account) {
+		if ($accid != $excludeid) {
+			$html .= "<option value='$accid'>" . $account['name'] . ' (' . $account['type'] . ")</option>\n"; ;
+		}
+	}
+	return $html;
+}
+
+function getSummaryDetails() {
+	global $db;
+	$summary = array();
+
+	$summary['allaccountbalance'] = $db->getAllTransactions();
+	if (!empty($_POST['accountid'])) {
+		$summary['acctaccountbalance'] = $db->getAllTransactions($_POST['accountid']);
+	}
+	$summary['loanaccountbalance'] = $db->getLoanAccountBalance();
+	$summary['grandtotal'] = $summary['allaccountbalance'] + $summary['loanaccountbalance'];
+
+	return $summary;
 }
