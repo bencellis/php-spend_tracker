@@ -281,19 +281,7 @@ function getPagingHTML($url, $page, $perpage, $recordcount, array $otherparams =
 					$pagelinks['previous'] = $startindex;
 					$startindex++;
 				}
-			} else if ($page < ($maxpages - $halfway)) {
-				$startindex = $page - ($halfway + 1);
-				if ($startindex > 1) {
-					// Previous link
-					$pagelinks['previous'] = $startindex;
-					$startindex++;
-				}
-				$endindex = $page + $halfway;
-				if ($endindex > $maxlinks) {
-					$pagelinks['next'] = $endindex;
-					$endindex--;
-				}
-			} else if ($page > $halfway) {
+			} else {
 				$startindex = $page - ($halfway + 1);
 				if ($startindex > 1) {
 					// Previous link
