@@ -183,34 +183,6 @@ $summary = getSummaryDetails();
 	<?php endforeach; ?>
 
 	<!-- Paging arear -->
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <a class="navbar-brand">Go To Page:</a>
-	<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
-		<span class="navbar-toggler-icon"></span>
-	</button>
-	<div class="collapse navbar-collapse" id="navbarNavAltMarkup">
-		<div class="navbar-nav">
-			<form class="form-inline">
-				 <button class="btn btn-small" href="#">
-					<i class="fas fa-hand-point-left"></i>
-				</a>
-				 <button class="btn btn-small disabled" href="#">10</a>
-				 <button class="btn btn-small" href="#">11</a>
-				 <button class="btn btn-small" href="#">12</a>
-				 <button class="btn btn-small" href="#">13</a>
-				 <button class="btn btn-small" href="#">14</a>
-				 <button class="btn btn-small" href="#">15</a>
-				 <button class="btn btn-small" href="#">16</a>
-				 <button class="btn btn-small" href="#">17</a>
-				 <button class="btn btn-small" href="#">18</a>
-				 <button class="btn btn-small" href="#">19</a>
-				 <button class="btn btn-small" href="#">
-					<i class="fas fa-hand-point-right"></i>
-				</a>
-		</form>
-    </div>
-  </div>
-</nav>
 
 
 	<!-- END OF PAGE DIV -->
