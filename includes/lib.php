@@ -3,6 +3,7 @@
 include_once('config.php');
 require_once('db.php');
 
+$version = '20200405-01';
 $db = new dbfunctions($dbconfig);
 
 function testdbconnection() {
@@ -19,46 +20,167 @@ function processPageParams() {
 
 
 function processFormdata() {
-	$message = array('text' => '', 'type' => 'bg-success');
+	$message = array();
 
-	switch ($_POST['action']){
-		case 'processStatement' :
-			if (file_exists($_FILES['statementfile']['tmp_name'])) {
-				// We open the file.
-				if (($processedlines = _processStatement()) !== null) {
-					$message['text'] = "Successfully processed $processedlines lines";
+	if ($action = empty($_POST['action']) ? null : $_POST['action']) {
+		$message = array('text' => '', 'type' => 'bg-success');
+		switch ($action){
+			case 'processStatement' :
+				if (file_exists($_FILES['statementfile']['tmp_name'])) {
+					// We open the file.
+					if (($processedlines = _processStatement()) !== null) {
+						$message['text'] = "Successfully processed $processedlines lines";
+					} else {
+						$message['text'] = 'Error processing the uploaded file - Possibly incorrect format.';
+						$message['type'] = 'bg-danger';
+					}
+				}else{
+					$message['text'] = 'No file has been uploaded.';
+					$message['type'] = 'bg-danger';
+				}
+				break;
+			case 'changeAccount' :
+				if (!empty($_POST['newaccountid'])) {
+					if (updateTransactionAccount()) {
+						$message['text'] = 'Account has been successfully changed.';
+					} else{
+						$message['text'] = 'Account has not been updated.';
+						$message['type'] = 'bg-danger';
+					}
+				}else{
+					$message['text'] = 'No account has been selected.';
+					$message['type'] = 'bg-danger';
+				}
+				break;
+			case 'createNewAccount' :
+				if (!$_POST['type']) {
+					$message['text'] = 'For new accounts, account type must be selected - please try again.';
+					$message['type'] = 'bg-danger';
+				} else if (empty($_POST['name'])) {
+					$message['text'] = 'For new accounts, an account name is required. - please try again.';
+					$message['type'] = 'bg-danger';
 				} else {
-					$message['text'] = 'Error processing the uploaded file - Possibly incorrect format.';
+					// Sanitise the input
+					if (!empty($_POST['bankref'])) {
+						$bankref = trim(filter_input(INPUT_POST, 'bankref', FILTER_SANITIZE_STRING));
+					}
+					if ($name = trim(filter_input(INPUT_POST, 'name', FILTER_SANITIZE_STRING))){
+						if (createNewAccount($name, $_POST['type'], $bankref)) {
+							$message['text'] = 'New account created.';
+						} else {
+							$message['text'] = 'Database error saving the account.';
+							$message['type'] = 'bg-danger';
+						}
+					}else{
+						$message['text'] = 'New account name is invalid.';
+						$message['type'] = 'bg-danger';
+					}
+				}
+				break;
+			case 'getCSV' :
+				$accountid = empty($_POST['accountid']) ? 0 : $_POST['accountid'];
+
+				if (!sendCSVfile($accountid)) {
+					$message['text'] = 'Error - creating CSV.';
 					$message['type'] = 'bg-danger';
 				}
-			}else{
-				$message['text'] = 'No file has been uploaded.';
-				$message['type'] = 'bg-danger';
-			}
-			break;
-		case 'changeAccount' :
-			if (!empty($_POST['newaccountid'])) {
-				if (updateTransactionAccount()) {
-					$message['text'] = 'Account has been successfully changed.';
-				} else{
-					$message['text'] = 'Account has not been updated.';
-					$message['type'] = 'bg-danger';
-				}
-			}else{
-				$message['text'] = 'No account has been selected.';
-				$message['type'] = 'bg-danger';
-			}
-			break;
-		case 'viewAccount' :
-		case 'changePagination' :
-		case 'clearAccountFilter' :
-			break;		// dealth with elsewhere.
-		default :
-			die('<pre>' . print_r($_REQUEST, true) . '</pre>');
+				break;
+			default :
+				$message = array();
+		}
 	}
-
 	return $message;
+}
 
+function sendCSVfile($accountid) {
+	global $db;
+
+	if ($result = $db->getBankAccountTransactions($accountid)) {
+
+		$f = fopen('php://output', 'w');
+		$first = true;
+		$balance = 0;
+		while ($record = $result->fetch_array(MYSQLI_ASSOC)) {
+			$csvline = array();
+			if ($first) {
+				if ($accountid) {
+					$filename = str_replace(' ', '_', strtolower($record['name']));
+					$filename = preg_replace("/[^a-z0-9_]/", "", $filename) . '.csv';
+				}else{
+					$filename = 'alltransactions.csv';
+				}
+
+				header('Content-Type: application/csv; charset=UTF-8');
+				header('Content-Disposition: attachment; filename="' . $filename . '";');
+
+				$first = false;
+
+				// Write the header line
+				$csvline = array(
+					'Date',
+					'Transaction type',
+					'Description',
+					'Paid out',
+					'Paid in',
+					'Charge Account'
+				);
+				fputcsv($f, $csvline);
+			}
+
+			$balance = $balance + $record['amount'];
+
+			if ($record['amount'] >= 0) {
+				$out = number_format($record['amount'], 2);
+				$in = '';
+			}else{
+				$in = number_format(($record['amount'] - ($record['amount'] * 2)), 2);
+				$out = '';
+			}
+
+			if (!$record['Account']) {
+				$record['Account'] = 'Unallocated';
+			}
+
+			$csvline = array(
+				DateTime::createFromFormat('Y-m-d', $record['date'])->format('d/m/Y'),
+				$record['transactiontype'],
+				$record['description'],
+				$out,
+				$in,
+				$record['Account']
+			);
+
+			fputcsv($f, $csvline);
+		}
+
+		// Balance Line
+		if ($balance >= 0) {
+			$out = number_format($balance, 2);
+			$in = '';
+		}else{
+			$in = number_format(($balance - ($balance * 2)), 2);
+			$out = '';
+		}
+		$csvline = array(
+				'',
+				'BALANCE',
+				'',
+				$out,
+				$in,
+				''
+		);
+		fputcsv($f, $csvline);
+
+		fclose($f);
+		exit;
+	} else {
+		return false;
+	}
+}
+
+function createNewAccount($name, $type, $bankref) {
+	global $db;
+	return $db->createNewAccount($name, $type, $bankref);
 }
 
 function updateTransactionAccount() {
@@ -123,7 +245,7 @@ function _processStatement() {
 	return $lines;
 }
 
-function  saveStatementrecord($record, $todaysdate, $laststatementdate){
+function saveStatementrecord($record, $todaysdate, $laststatementdate){
 	global $db;
 
 	// Check the date is not today
@@ -207,7 +329,9 @@ function getSummaryDetails() {
 	$summary = array();
 
 	$summary['allaccountbalance'] = $db->getAllTransactions();
+	$summary['accountid'] = 0;
 	if (!empty($_POST['accountid'])) {
+		$summary['accountid'] = $_POST['accountid'];
 		$summary['acctaccountbalance'] = $db->getAllTransactions($_POST['accountid']);
 	}
 	$summary['loanaccountbalance'] = $db->getLoanAccountBalance();

@@ -57,8 +57,9 @@ class dbfunctions {
 			$page = 0;
 		}
 		$startrecord = $page * $perpage;
+
 		// save for the pagination
-		$this->_getTransactionCount($accountid);
+		$recordcount = $this->_getTransactionCount($accountid);
 
 		$sql = "SELECT * FROM bankaccount";
 		if ($accountid) {
@@ -70,21 +71,25 @@ class dbfunctions {
 					LIMIT $startrecord, $perpage";
 
 		$result = $this->mysqli->query($sql);
-		return $this->_resultToArray($result);
+		return array($recordcount, $this->_resultToArray($result));
 	}
 
-	private function _getTransactionCount($accountid = 0) {
+
+	private function _getTransactionCount($accountid) {
 
 		if (!empty($this->cacheaccountcounts[$accountid])) {
 			$count = $this->cacheaccountcounts[$accountid];
 		}else{
-			$sql = "SELECT COUNT(*) as reccnt FROM bankaccount WHERE account ";
-			if ( $accountid == 0 ) {
-				$sql .= 'IS NULL';
-			}else{
-				$sql .= "= $accountid";
+			$sql = "SELECT COUNT(*) as reccnt FROM bankaccount";
+			if ($accountid !== null && $accountid == 0 ) {
+				$sql .= ' WHERE account IS NULL';
+			}else if ($accountid) {
+				$sql .= " WHERE account = $accountid";
 			}
-			$result = $this->mysqli->query($sql);
+
+			if (!$result = $this->mysqli->query($sql)) {
+				die($this->getLastError());
+			}
 			$record = $result->fetch_row();
 			$count = $record[0];
 			$this->cacheaccountcounts[$accountid] = $count;
@@ -110,6 +115,39 @@ class dbfunctions {
 		}
 		return $results;
 	}
+
+	public function createNewAccount($name, $type, $bankref) {
+		$sql = "INSERT INTO accounts SET ";
+
+		$sql .= "name = '" . $this->mysqli->escape_string($name) . "',\n";
+		$sql .= "`type` = '$type'\n";
+		if ($bankref) {
+			$sql .= ", bankref = '" . $this->mysqli->escape_string($bankref) . "'";
+		}
+		if (!$this->mysqli->query($sql)) {
+			echo "<p>$sql</p>";
+			die($this->getLastError() );
+		}
+		return true;
+	}
+
+	public function getBankAccountTransactions($accountid) {
+		$sql = "SELECT ba.*, ac.name, CONCAT(ac.name, ' (', ac.type , ')') as Account
+					FROM bankaccount ba
+					LEFT JOIN accounts ac ON ac.recid = ba.account\n";
+
+		if ($accountid) {
+			$sql .= "WHERE ba.account = $accountid\n";
+		}
+		$sql .= "ORDER BY ba.date ASC";
+
+		if (!$result = $this->mysqli->query($sql)) {
+			echo "<p>$sql</p>";
+			die($this->getLastError() );
+		}
+		return $result;
+	}
+
 
 	public function saveStatementRecord($record) {
 		$ssql = '';

@@ -1,26 +1,33 @@
 <?php
-include_once ('includes/header.php');
 
-$ishome = true;
-$message = null;
-$recordcnt = 0;
+require_once('includes/lib.php');
 
+// Deal with forms.
 if (!empty($_POST)) {
 	$message = processFormdata();
 }
 
+include_once ('includes/header.php');
+require_once('includes/paginator.php');
+
+$message = null;
+
 $postback = strtok($_SERVER["REQUEST_URI"], '?');; 	// Remove any get params.
 
 list($page, $perpage) = processPageParams();
+$ishome = ($page == 1);
+
 $accounts = getAccounts();
 
 //die('<pre>' . print_r($accounts, true) . '</pre>');
 
 // All processing done we can move on.
-$transactions = getTransactions();
+list ($recordcount, $transactions) = getTransactions();
+
 $htmloptions = makeHTMLOptions();
 
-$summary = getSummaryDetails();
+$summary = $ishome ? getSummaryDetails() : array();
+
 ?>
 
 <div class="container">
@@ -55,7 +62,7 @@ $summary = getSummaryDetails();
 	</div>
 	<?php endif;?>
 
-	<?php if ($summary): ?>
+	<?php if (count($summary)): ?>
 		<div class="card">
 			<div class="card-body">
 				<h5 class="card-title">Account Summary</h5>
@@ -67,14 +74,24 @@ $summary = getSummaryDetails();
 				<?php if (!empty($summary['acctaccountbalance'])): ?>
 					<p class="card-text text-info"><strong>This Account Total:</strong> £<?php echo number_format($summary['acctaccountbalance'], 2); ?>
 				<?php endif; ?>
-				<p><button class="btn btn-success">Download CSV</button></p>
+					<form class="form-inline" method="post" action="<?php echo $postback;?>" >
+						<div class="hidden">
+							<input type="hidden" name="accountid" value="<?php echo $summary['accountid']; ?>" />
+							<input type="hidden" name="page" value="<?php echo $page; ?>" />
+							<input type="hidden" name="perpage" value="<?php echo $perpage; ?>" />
+							<input type="hidden" name="recordcount" value="<?php echo $recordcount; ?>" />
+						</div>
+						<div class="form-group">
+							<button type="submit" name="action" value="getCSV" class="btn btn-success">Download CSV</button>
+						</div>
+					</form>
 			</div>
 		</div>
 	<?php endif; ?>
 
 	<div class="row">
 		<div class="col">
-			<br />
+			<hr />
 		</div>
 	</div>
 	<?php foreach ($transactions as $recid => $transaction): ?>
@@ -164,7 +181,7 @@ $summary = getSummaryDetails();
 								</div>
 								<div class="col-2">
 									<div class="form-group">
-										<button class="btn btn-outline-primary" onclick="alert('Not Available'); return false;" title="Add Account">
+										<button type="button" class="btn btn-outline-secondary" data-toggle="modal" data-target="#addAcctModal" title="Add Account">
 											<i class="fas fa-plus text-danger"></i>
 										</button>
 									</div>
@@ -183,9 +200,8 @@ $summary = getSummaryDetails();
 	<?php endforeach; ?>
 
 	<!-- Paging arear -->
+	<?php echo getPagingHTML($postback, 7, $page, $perpage, $recordcount); ?>
 
-
-	<!-- END OF PAGE DIV -->
 	<div class="row">
 		<div class="col">
 			<hr />
@@ -202,15 +218,15 @@ $summary = getSummaryDetails();
 		<div class="col">
 			<div class="row align-items-end" id="my-page-footer-1">
 				<form class="form-inline w-100 p-2" method="post" action="<?php echo $postback;?>" >
-					<div class="col">
+					<div class="col-8">
 						<div class="form-group">
-							<select name="accountid" class="form-control" title="Select Account to filter by", aria-label="Select Account to filter by">
+							<select name="accountid" class="form-control" title="Select Account to filter by" aria-label="Select Account to filter by">
 								<option value="0">No Account Specified</option>
 								<?php echo $htmloptions; ?>
 							</select>
 							<input type="hidden" name="page" value="<?php echo $page; ?>" />
 							<input type="hidden" name="perpage" value="<?php echo $perpage; ?>" />
-							<input type="hidden" name="recordcnt" value="<?php echo $recordcnt; ?>" />
+							<input type="hidden" name="recordcount" value="<?php echo $recordcount; ?>" />
 						</div>
 					</div>
 					<div class="col-2">
@@ -231,41 +247,90 @@ $summary = getSummaryDetails();
 					</div>
 				</form>
 			</div>
-			<div class="row w-100 align-items-end" id="my-page-footer-2">
-				<div class="col">
-					<p>Viewing Page: <?php echo $page; ?> : <?php echo $perpage; ?> records per page</p>
-				</div>
-				<div class="col">
-					<form class="form-inline w-100 p-2" method="post" action="<?php echo $postback;?>" >
-						<div class="row align-items-end">
-							<div class="col">
-								<div class="form-group">
-									<select name="perpage" class="form-control">
-										<option>30</option>
-										<option>50</option>
-										<option>100</option>
-										<option>250</option>
-									</select>
-								</div>
-							</div>
-							<div class="col-2">
-								<div class="form-group">
-									<input type="hidden" name="page" value="<?php echo $page; ?>" />
-									<input type="hidden" name="recordcnt" value="<?php echo $recordcnt; ?>" />
-									<button class="btn btn-outline-primary" type="submit" name="action" value="changePagination"
-											title="Show number of records per page." aria-label="Show number of records per page.">
-										<i class="fas fa-list-alt"></i>
-									</button>
-									</a>
-								</div>
-							</div>
+			<div class="row align-items-end" id="my-page-footer-2">
+				<form class="form-inline w-100 p-2"  method="post" action="<?php echo $postback;?>" >
+					<div class="col">
+						<p>Viewing Page: <?php echo $page; ?> : <?php echo $perpage; ?> records per page</p>
+					</div>
+					<div class="col-3">
+						<div class="form-group">
+							<select name="perpage" class="form-control">
+								<option>30</option>
+								<option>50</option>
+								<option>100</option>
+								<option>250</option>
+							</select>
 						</div>
-					</form>
-				</div>
+					</div>
+					<div class="col-2">
+						<div class="form-group">
+							<input type="hidden" name="page" value="<?php echo $page; ?>" />
+							<input type="hidden" name="recordcount" value="<?php echo $recordcount; ?>" />
+							<button class="btn btn-outline-primary" type="submit" name="action" value="changePagination"
+									title="Show number of records per page." aria-label="Show number of records per page.">
+								<i class="fas fa-list-alt"></i>
+							</button>
+						</div>
+					</div>
+				</form>
 			</div>
 		</div>
 	</div>
+	<!-- Modal -->
+	<div class="modal" id="addAcctModal" tabindex="-1" role="dialog" aria-labelledby="addAcctModalLabel" aria-hidden="true">
+		<div class="modal-dialog" role="document">
+			<form name="newaccount" id="id_newaccount" method="post" action="<?php echo $postback;?>" >
+				<div class="hidden">
+					<input type="hidden" name="action" value="createNewAccount" />
+					<input type="hidden" name="recid" value="<?php echo $recid; ?>" />
+					<input type="hidden" name="page" value="<?php echo $page; ?>" />
+					<input type="hidden" name="perpage" value="<?php echo $perpage; ?>" />
+					<input type="hidden" name="recordcount" value="<?php echo $recordcount; ?>" />
+				</div>
+				<div class="modal-content p-3">
+					<div class="modal-header">
+						<h5 class="modal-title" id="addAcctModalLabel">New Account</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+					<div class="modal-body">
+						<div class="row">
+							<div class="col">
+									<div class="form-group">
+										<label for="id_namefield">Name: <span class="small text-danger">(required) </span></label>
+										<input type="text" class="form-control" name="name" id="id_namefield" placeholder="Account name">
+									</div>
+									<div class="form-group">
+										<label for="id_accttype">Type: <span class="small text-danger">(required) </span></label>
+										<select class="form-control" name="type" id="id_accttype">
+											<option value='0'> -- Select -- </option>
+											<option value='Expenditure'>Expenditure</option>
+											<option value='Loan'>Loan</option>
+											<option value='Income'>Income</option>
+											<option value='Misc'>Misc</option>
+											<option value='Investment'>Investment</option>
+										</select>
+									</div>
+									<div class="form-group">
+										<label for="id_bankreffield">Bank Reference:</label>
+										<input type="text" class="form-control" name="bankref" id="id_bankreffield" placeholder="Bank Reference">
+										<small id="bankrefHelp" class="form-text text-muted">Partial information thet helps identify the account on statements. (Optional)</small>
+									</div>
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+						<button type="submit" class="btn btn-primary">Save changes</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+
 
 </div> <!-- end container -->
+
 
 <?php include_once('includes/footer.php'); ?>
