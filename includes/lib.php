@@ -120,8 +120,8 @@ function sendCSVfile($accountid) {
 					'Date',
 					'Transaction type',
 					'Description',
-					'Paid out',
 					'Paid in',
+					'Paid out',
 					'Charge Account'
 				);
 				fputcsv($f, $csvline);
@@ -255,9 +255,9 @@ function saveStatementrecord($record, $todaysdate, $laststatementdate){
 		if ((!$laststatementdate) || ($recorddate > $laststatementdate)) {
 			unset($record['balance']);
 			if ($record['debit']) {
-				$amount = $record['debit'];
+				$amount = 0 - $record['debit'];
 			} else {
-				$amount = 0 - $record['credit'];
+				$amount = $record['credit'];
 			}
 			unset($record['debit']);
 			unset($record['credit']);
@@ -334,7 +334,8 @@ function getSummaryDetails() {
 		$summary['accountid'] = $_POST['accountid'];
 		$summary['acctaccountbalance'] = $db->getAllTransactions($_POST['accountid']);
 	}
-	$summary['loanaccountbalance'] = $db->getLoanAccountBalance();
+	$summary['loanaccountbalance'] = ($db->getLoanAccountBalance()) * -1; // Change to postive.
+
 	$summary['grandtotal'] = $summary['allaccountbalance'] + $summary['loanaccountbalance'];
 
 	return $summary;
