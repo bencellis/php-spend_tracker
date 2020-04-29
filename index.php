@@ -14,7 +14,7 @@ $message = null;
 
 $postback = strtok($_SERVER["REQUEST_URI"], '?');; 	// Remove any get params.
 
-list($page, $perpage) = processPageParams();
+list($page, $perpage, $filter) = processPageParams();
 $ishome = ($page == 1);
 
 $accounts = getAccounts();
@@ -160,6 +160,9 @@ $summary = $ishome ? getSummaryDetails() : array();
 								<input type="hidden" name="recid" value="<?php echo $recid; ?>" />
 								<input type="hidden" name="page" value="<?php echo $page; ?>" />
 								<input type="hidden" name="perpage" value="<?php echo $perpage; ?>" />
+								<?php if ($filter) :?>
+									<input type="hidden" name="accountid" value="<?php echo $filter; ?>" />
+								<?php endif; ?>
 							</div>
 							<strong>New Account: &nbsp;</strong>
 							<div class="row align-items-end">
@@ -199,8 +202,14 @@ $summary = $ishome ? getSummaryDetails() : array();
 		</div>
 	<?php endforeach; ?>
 
-	<!-- Paging arear -->
-	<?php echo getPagingHTML($postback, 7, $page, $perpage, $recordcount); ?>
+	<!-- Paging area -->
+	<?php
+		$params = array();
+		if ($filter) {
+			$params = array('accountid' => $filter);
+		}
+		echo getPagingHTML($postback, 7, $page, $perpage, $recordcount, $params);
+	?>
 
 	<div class="row">
 		<div class="col">

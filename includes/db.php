@@ -116,7 +116,7 @@ class dbfunctions {
 		return $results;
 	}
 
-	public function createNewAccount($name, $type, $bankref) {
+	public function createNewAccount($name, $type, $bankref = null) {
 		$sql = "INSERT INTO accounts SET ";
 
 		$sql .= "name = '" . $this->mysqli->escape_string($name) . "',\n";

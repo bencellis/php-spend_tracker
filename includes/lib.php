@@ -3,7 +3,7 @@
 include_once('config.php');
 require_once('db.php');
 
-$version = '20200405-01';
+$version = '20200429-01';
 $db = new dbfunctions($dbconfig);
 
 function testdbconnection() {
@@ -15,7 +15,8 @@ function testdbconnection() {
 function processPageParams() {
 	$page = isset($_REQUEST['page']) ? $_REQUEST['page'] : 1;
 	$perpage= isset($_REQUEST['perpage']) ? $_REQUEST['perpage'] : 20;
-	return array($page, $perpage);
+	$filter = isset($_REQUEST['accountid']) ? $_REQUEST['accountid'] : null;
+	return array($page, $perpage, $filter);
 }
 
 
@@ -63,6 +64,8 @@ function processFormdata() {
 					// Sanitise the input
 					if (!empty($_POST['bankref'])) {
 						$bankref = trim(filter_input(INPUT_POST, 'bankref', FILTER_SANITIZE_STRING));
+					}else {
+						$bankref = null;
 					}
 					if ($name = trim(filter_input(INPUT_POST, 'name', FILTER_SANITIZE_STRING))){
 						if (createNewAccount($name, $_POST['type'], $bankref)) {
@@ -178,7 +181,7 @@ function sendCSVfile($accountid) {
 	}
 }
 
-function createNewAccount($name, $type, $bankref) {
+function createNewAccount($name, $type, $bankref = null) {
 	global $db;
 	return $db->createNewAccount($name, $type, $bankref);
 }
