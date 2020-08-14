@@ -3,7 +3,7 @@
 include_once('config.php');
 require_once('db.php');
 
-$version = '20200429-01';
+$version = '20200814-03';
 $db = new dbfunctions($dbconfig);
 
 function testdbconnection() {
@@ -18,7 +18,6 @@ function processPageParams() {
 	$filter = isset($_REQUEST['accountid']) ? $_REQUEST['accountid'] : null;
 	return array($page, $perpage, $filter);
 }
-
 
 function processFormdata() {
 	$message = array();
@@ -335,12 +334,17 @@ function getSummaryDetails() {
 	$summary['accountid'] = 0;
 	if (!empty($_POST['accountid'])) {
 		$summary['accountid'] = $_POST['accountid'];
-		$summary['acctaccountbalance'] = $db->getAllTransactions($_POST['accountid']);
+		$summary['acctaccountbalance'] = $db->getAllTransactions($_POST['accountid']) * -1;
 	}
 	$summary['loanaccountbalance'] = ($db->getLoanAccountBalance()) * -1; // Change to postive.
 
 	$summary['grandtotal'] = $summary['allaccountbalance'] + $summary['loanaccountbalance'];
 
 	return $summary;
+}
+
+function getBalanceDetails() { 
+	global $db;
+	return $db->getBalanceDetails();
 }
 

@@ -27,6 +27,7 @@ list ($recordcount, $transactions) = getTransactions();
 $htmloptions = makeHTMLOptions();
 
 $summary = $ishome ? getSummaryDetails() : array();
+$balances = $ishome ? getBalanceDetails() : array();
 
 ?>
 
@@ -63,28 +64,58 @@ $summary = $ishome ? getSummaryDetails() : array();
 	<?php endif;?>
 
 	<?php if (count($summary)): ?>
-		<div class="card">
-			<div class="card-body">
-				<h5 class="card-title">Account Summary</h5>
-				<p class="card-text">
-					Cash Balance: £<?php echo number_format($summary['allaccountbalance'], 2); ?><br />
-					Loan Balance: £<?php echo number_format($summary['loanaccountbalance'], 2); ?>
-				</p>
-				<p class="card-text mb-2 text-success"><strong>Fund Total:</strong> £<?php echo number_format($summary['grandtotal'], 2); ?></p>
-				<?php if (!empty($summary['acctaccountbalance'])): ?>
-					<p class="card-text text-info"><strong>This Account Total:</strong> £<?php echo number_format($summary['acctaccountbalance'], 2); ?>
-				<?php endif; ?>
-					<form class="form-inline" method="post" action="<?php echo $postback;?>" >
-						<div class="hidden">
-							<input type="hidden" name="accountid" value="<?php echo $summary['accountid']; ?>" />
-							<input type="hidden" name="page" value="<?php echo $page; ?>" />
-							<input type="hidden" name="perpage" value="<?php echo $perpage; ?>" />
-							<input type="hidden" name="recordcount" value="<?php echo $recordcount; ?>" />
-						</div>
-						<div class="form-group">
-							<button type="submit" name="action" value="getCSV" class="btn btn-success">Download CSV</button>
-						</div>
-					</form>
+	<div class="row">
+		<div class="col">
+				<div class="card">
+					<div class="card-body">
+						<h5 class="card-title">Account Summary</h5>
+						<p class="card-text">
+							Cash Balance: £<?php echo number_format($summary['allaccountbalance'], 2); ?><br />
+							Loan Balance: £<?php echo number_format($summary['loanaccountbalance'], 2); ?>
+						</p>
+						<p class="card-text mb-2 text-success"><strong>Fund Total:</strong> £<?php echo number_format($summary['grandtotal'], 2); ?></p>
+						<?php if (!empty($summary['acctaccountbalance'])): ?>
+							<p class="card-text text-info"><strong>This Account Total:</strong> £<?php echo number_format($summary['acctaccountbalance'], 2); ?>
+						<?php endif; ?>
+							<form class="form-inline" method="post" action="<?php echo $postback;?>" >
+								<div class="hidden">
+									<input type="hidden" name="accountid" value="<?php echo $summary['accountid']; ?>" />
+									<input type="hidden" name="page" value="<?php echo $page; ?>" />
+									<input type="hidden" name="perpage" value="<?php echo $perpage; ?>" />
+									<input type="hidden" name="recordcount" value="<?php echo $recordcount; ?>" />
+								</div>
+								<div class="form-group">
+									<button type="submit" name="action" value="getCSV" class="btn btn-success">Download CSV</button>
+								</div>
+							</form>
+					</div>
+				</div>
+			</div>
+			<div class="col">
+				<div class="card">
+					<div class="card-body">
+						<h5 class="card-title">Share Summary</h5>
+						<table class="table table-striped table-sm">
+							<thead class="thead-dark">
+								<tr class="text-center">
+									<th scope="col">Name</th>
+									<th scope="col">Share</th>
+									<th scope="col">Loan Balance</th>
+									<th scope="col">Share Value</th>
+								</tr>
+							</thead>
+							<?php $eachshare = number_format(($summary['grandtotal']/count($balances)),2); ?>
+							<?php foreach ($balances as $balance): ?>
+								<tr>
+									<td><?php echo $balance['name']; ?></td>
+									<td class="text-right"><?php echo $eachshare; ?></td>
+									<td class="text-right"><?php echo number_format($balance['balance'], 2)?></td>
+									<td class="text-right"><?php echo number_format(($eachshare + $balance['balance']), 2)?>
+								</tr>
+							<?php endforeach;?>
+						</table>
+					</div>
+				</div>
 			</div>
 		</div>
 	<?php endif; ?>
@@ -116,7 +147,7 @@ $summary = $ishome ? getSummaryDetails() : array();
 					<div class="col">
 						<strong>Income:</strong>
 							<?php
-							if ($transaction['amount'] < 0) {
+							if ($transaction['amount'] > 0) {
 								echo '£' . number_format($transaction['amount'], 2);
 							}else{
 								echo '&nbsp;';
@@ -128,8 +159,8 @@ $summary = $ishome ? getSummaryDetails() : array();
 					<div class="col">
 						<strong>Spend:</strong>
 							<?php
-							if ($transaction['amount'] > 0) {
-								echo '£' . number_format($transaction['amount'], 2);
+							if ($transaction['amount'] < 0) {
+								echo '£' . number_format(($transaction['amount'] * -1), 2);
 							}else{
 								echo '&nbsp;';
 							}

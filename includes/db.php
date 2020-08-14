@@ -217,6 +217,20 @@ class dbfunctions {
 			return null;
 		}
 	}
+	
+	public function getBalanceDetails() {
+		$sql = "SELECT aa.name, SUM(ba.amount) AS balance
+					FROM bankaccount ba 
+					JOIN accounts aa ON aa.recid = ba.account 
+					WHERE aa.type = 'Loan' 
+					GROUP BY ba.account
+					HAVING balance <> 0
+					ORDER BY aa.name";
+
+		$records = $this->mysqli->query($sql);
+		return $this->_resultToArray($records);
+
+	}
 
 
 }
