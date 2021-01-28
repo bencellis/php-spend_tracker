@@ -104,13 +104,13 @@ $balances = $ishome ? getBalanceDetails() : array();
 									<th scope="col">Share Value</th>
 								</tr>
 							</thead>
-							<?php $eachshare = number_format(($summary['grandtotal']/count($balances)),2); ?>
+							<?php $eachshare = $summary['grandtotal']/count($balances); ?>
 							<?php foreach ($balances as $balance): ?>
 								<tr>
 									<td><?php echo $balance['name']; ?></td>
-									<td class="text-right"><?php echo $eachshare; ?></td>
-									<td class="text-right"><?php echo number_format($balance['balance'], 2)?></td>
-									<td class="text-right"><?php echo number_format(($eachshare + $balance['balance']), 2)?>
+									<td class="text-right"><?php echo number_format($eachshare, 2); ?></td>
+									<td class="text-right"><?php echo number_format($balance['balance'], 2); ?></td>
+									<td class="text-right"><?php echo number_format(($eachshare + $balance['balance']), 2); ?>
 								</tr>
 							<?php endforeach;?>
 						</table>
