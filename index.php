@@ -28,6 +28,7 @@ $htmloptions = makeHTMLOptions();
 
 $summary = $ishome ? getSummaryDetails() : array();
 $balances = $ishome ? getBalanceDetails() : array();
+$unallocated = $ishome ? getUnallocatedSummary() : null;
 
 ?>
 
@@ -88,6 +89,13 @@ $balances = $ishome ? getBalanceDetails() : array();
 									<button type="submit" name="action" value="getCSV" class="btn btn-success">Download CSV</button>
 								</div>
 							</form>
+					</div>
+				</div>
+				<div class="card bg-light">
+					<div class="card-body" bg-color=>
+						<p class="card-text text-center">				
+							There are <?php echo $unallocated['recordcount']; ?> unallocated transactions totalling £<?php echo number_format($unallocated['total'], 2); ?>.
+						</p>
 					</div>
 				</div>
 			</div>

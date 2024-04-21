@@ -241,7 +241,7 @@ function _processStatement() {
 			saveStatementrecord($record, $todaysdate, $laststatementdate);
 		}
 		fclose($handle);
-	}else{
+	} else {
 		return null;
 	}
 	return $lines;
@@ -249,7 +249,7 @@ function _processStatement() {
 
 function saveStatementrecord($record, $todaysdate, $laststatementdate){
 	global $db;
-
+	
 	// Check the date is not today
 	$recorddate = DateTime::createFromFormat('d M Y', strtolower($record['date']));
 	if ($recorddate < $todaysdate) {
@@ -346,5 +346,10 @@ function getSummaryDetails() {
 function getBalanceDetails() { 
 	global $db;
 	return $db->getBalanceDetails();
+}
+
+function getUnallocatedSummary() {
+	global $db;
+	return $db->getUnallocatedSummary();
 }
 

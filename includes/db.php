@@ -231,6 +231,10 @@ class dbfunctions {
 		return $this->_resultToArray($records);
 
 	}
-
-
+	
+	function getUnallocatedSummary() {
+		$sql = "SELECT COUNT(*) AS recordcount, SUM(amount) as total FROM bankaccount WHERE account IS NULL";
+		$result = $this->mysqli->query($sql);
+		return $result->fetch_assoc();
+	}
 }
