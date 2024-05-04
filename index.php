@@ -27,6 +27,8 @@ list ($recordcount, $transactions) = getTransactions();
 $htmloptions = makeHTMLOptions();
 
 $summary = $ishome ? getSummaryDetails() : array();
+//$summary['borrowsbalance'] = 1000;
+
 $balances = $ishome ? getBalanceDetails() : array();
 $unallocated = $ishome ? getUnallocatedSummary() : null;
 
@@ -73,6 +75,10 @@ $unallocated = $ishome ? getUnallocatedSummary() : null;
 						<p class="card-text">
 							Cash Balance: £<?php echo number_format($summary['allaccountbalance'], 2); ?><br />
 							Loan Balance: £<?php echo number_format($summary['loanaccountbalance'], 2); ?>
+							<?php if ($summary['borrowsbalance']): ?>
+								<br />
+								Owes (Borrows) Balance: £<?php echo number_format($summary['borrowsbalance'], 2); ?>
+							<?php endif; ?>
 						</p>
 						<p class="card-text mb-2 text-success"><strong>Fund Total:</strong> £<?php echo number_format($summary['grandtotal'], 2); ?></p>
 						<?php if (!empty($summary['acctaccountbalance'])): ?>
@@ -93,8 +99,12 @@ $unallocated = $ishome ? getUnallocatedSummary() : null;
 				</div>
 				<div class="card bg-light">
 					<div class="card-body" bg-color=>
-						<p class="card-text text-center">				
+						<p class="card-text text-center">
+						<?php if ($unallocated['recordcount']): ?>											
 							There are <?php echo $unallocated['recordcount']; ?> unallocated transactions totalling £<?php echo number_format($unallocated['total'], 2); ?>.
+						<?php else: ?>
+							There are no unallocated transactions.
+						<?php endif; ?>
 						</p>
 					</div>
 				</div>
@@ -128,6 +138,20 @@ $unallocated = $ishome ? getUnallocatedSummary() : null;
 		</div>
 	<?php endif; ?>
 
+	<div class="row">
+		<div class="col">
+			<hr />
+		</div>
+	</div>
+	<div class="row">
+		<div class="col">
+			<div class="form-group">
+				<button type="button" class="btn btn-secondary" title="Journal Entry">
+					Manual Transfer
+				</button>
+			</div>
+		</div>
+	</div>
 	<div class="row">
 		<div class="col">
 			<hr />

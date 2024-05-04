@@ -272,6 +272,7 @@ function saveStatementrecord($record, $todaysdate, $laststatementdate){
 			if ($acct = getTransactionAcct($record['description'])) {
 				$record['account'] = $acct;
 			}
+			
 			// Save into the database.
 			$db->saveStatementRecord($record);
 		}
@@ -289,9 +290,9 @@ function getTransactionAcct($string) {
 	$string = preg_replace('/Withdrawal.+$/', '', $string);
 	$string = preg_replace('/Credit.+$/', '', $string);
 
-	$newstring = $db->getTransactionAcct(trim($string));
+	$transactionacct = $db->getTransactionAcct(trim($string));
 
-	return $newstring;
+	return $transactionacct;
 
 }
 
@@ -337,8 +338,10 @@ function getSummaryDetails() {
 		$summary['acctaccountbalance'] = $db->getAllTransactions($_POST['accountid']) * -1;
 	}
 	$summary['loanaccountbalance'] = ($db->getLoanAccountBalance()) * -1; // Change to postive.
+	
+	$summary['borrowsbalance'] = ($db->getBorrowsAccountBalance()) * -1; // Change to negative.
 
-	$summary['grandtotal'] = $summary['allaccountbalance'] + $summary['loanaccountbalance'];
+	$summary['grandtotal'] = $summary['allaccountbalance'] + $summary['loanaccountbalance'] + $summary['borrowsbalance'];
 
 	return $summary;
 }

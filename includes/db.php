@@ -173,7 +173,8 @@ class dbfunctions {
 		if (isset($this->cacheaccts[$str])) {
 			return $this->cacheaccts[$str];
 		} else {
-			$sql = "SELECT recid FROM accounts WHERE bankref LIKE '%$str%'";
+			// $sql = "SELECT recid FROM accounts WHERE bankref LIKE '%$str%'";
+			$sql = "SELECT account FROM bankreference WHERE reference LIKE '%$str%'";
 			$record = $this->mysqli->query($sql);
 			if ($result = $record->fetch_row()) {
 				$this->cacheaccts[$str] = $result[0];
@@ -209,6 +210,20 @@ class dbfunctions {
 					FROM bankaccount
 					WHERE account IN (
 						SELECT recid FROM accounts WHERE type = 'Loan'
+					)";
+		$record = $this->mysqli->query($sql);
+		if ($result = $record->fetch_row()) {
+			return $result[0];
+		}else{
+			return null;
+		}
+	}
+	
+	public function getBorrowsAccountBalance() {
+		$sql = "SELECT SUM(amount)
+					FROM bankaccount
+					WHERE account IN (
+						SELECT recid FROM accounts WHERE type = 'Borrows'
 					)";
 		$record = $this->mysqli->query($sql);
 		if ($result = $record->fetch_row()) {
